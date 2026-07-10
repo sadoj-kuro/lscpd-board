@@ -314,45 +314,35 @@ if (loginBtn) {
         }
 
         try {
-            const configDoc = await db.collection('lscpd').doc('_config').get();
-            if (!configDoc.exists) {
-                alert("Le document '_config' n'existe pas dans la base de données ! Vous devez le créer manuellement sur Firebase.");
-                return;
-            }
-
-            const rawConfig = configDoc.data();
-            
-            // On nettoie les clés (si jamais tu as mis un espace après 'detectivePassword' dans Firebase)
-            const config = {};
-            for (let key in rawConfig) {
-                config[key.trim()] = rawConfig[key];
-            }
-
-            // Nettoyage des chaînes pour éviter les erreurs bêtes (espaces en trop, guillemets tapés par erreur)
-            const inputPass = pass.trim();
-            const dbDetective = (config.detectivePassword || '').replace(/['"]/g, '').trim();
-            const dbAdmin = (config.adminPassword || '').replace(/['"]/g, '').trim();
-
-            if (inputPass === dbDetective && dbDetective !== '') { 
+            // On essaie d'abord de se connecter en Détective
+            try {
+                await firebase.auth().signInWithEmailAndPassword('detective@lscpd.local', pass);
                 isEditor = true;
                 isAdmin = false;
                 localStorage.setItem('lscpd_role', 'detective');
                 updateAuthUI();
                 loadData();
                 alert("Connexion réussie. Mode Détective (Édition) activé !");
-            } else if (inputPass === dbAdmin && dbAdmin !== '') { 
-                isEditor = true;
-                isAdmin = true;
-                localStorage.setItem('lscpd_role', 'admin');
-                updateAuthUI();
-                loadData();
-                alert("Connexion réussie. Mode Super Admin activé !");
-            } else {
-                alert("Mot de passe incorrect.");
+                return;
+            } catch (errDetective) {
+                // Si ça rate (mot de passe incorrect pour le détective), on essaie en Super Admin
+                try {
+                    await firebase.auth().signInWithEmailAndPassword('admin@lscpd.local', pass);
+                    isEditor = true;
+                    isAdmin = true;
+                    localStorage.setItem('lscpd_role', 'admin');
+                    updateAuthUI();
+                    loadData();
+                    alert("Connexion réussie. Mode Super Admin activé !");
+                    return;
+                } catch (errAdmin) {
+                    // Si les deux échouent, le mot de passe est vraiment incorrect
+                    alert("Mot de passe incorrect.");
+                }
             }
         } catch (e) {
-            console.error("Erreur Firebase : ", e);
-            alert("Erreur de connexion à la base de données.");
+            console.error("Erreur Firebase Auth : ", e);
+            alert("Erreur de connexion au système d'authentification.");
         }
     });
 }
@@ -362,6 +352,9 @@ if (logoutBtn) {
         isEditor = false;
         isAdmin = false;
         localStorage.removeItem('lscpd_role');
+        if (typeof firebase !== 'undefined' && firebase.auth) {
+            firebase.auth().signOut();
+        }
         updateAuthUI();
         loadData();
         alert("Déconnexion réussie. Mode Lecture Seule activé.");
