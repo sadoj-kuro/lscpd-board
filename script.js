@@ -676,29 +676,20 @@ function renderItem(item) {
         }
     }
 
-    if (item.type === 'note') {
-        const ta = document.createElement('textarea');
-        ta.value = item.content;
-        ta.placeholder = "Écrire une note...";
-        ta.style.textAlign = item.align || 'left';
-        if (!isEditor) ta.readOnly = true;
-
-        ta.addEventListener('input', (e) => {
-            if (!isEditor) return;
-            const currentItem = items.find(i => i.id === item.id) || item;
-            currentItem.content = e.target.value;
-            ta.style.height = 'auto';
-            ta.style.height = (ta.scrollHeight) + 'px';
-            saveData(); // Sauvegarde temps réel quand on tape !
-        });
     if (item.type === 'note' || item.type === 'floating-text') {
         const textarea = document.createElement('textarea');
         textarea.value = item.content;
         textarea.spellcheck = false;
+        
         if (item.type === 'floating-text') {
             textarea.placeholder = "Tapez un titre...";
+        } else {
+            textarea.placeholder = "Écrire une note...";
+            textarea.style.textAlign = item.align || 'left';
         }
         
+        if (!isEditor) textarea.readOnly = true;
+
         textarea.onfocus = () => activeTextareaId = item.id;
         textarea.onblur = () => {
             activeTextareaId = null;
@@ -707,15 +698,21 @@ function renderItem(item) {
                 saveData();
             }
         };
-        // Auto-resize
-        textarea.oninput = () => {
+
+        // Auto-resize et sauvegarde temps réel
+        textarea.oninput = (e) => {
+            if (!isEditor) return;
             textarea.style.height = 'auto';
             textarea.style.height = textarea.scrollHeight + 'px';
-            item.content = textarea.value;
-            // On sauvegarde en temps réel (attention si bcp de requetes)
+            item.content = e.target.value;
             saveData();
-            renderLines(); // update lines if size changed
+            renderLines();
         };
+
+        textarea.addEventListener('mousedown', (e) => {
+            if (!isLinkingMode && isEditor) e.stopPropagation();
+        });
+
         el.appendChild(textarea);
         
         // Initial resize
