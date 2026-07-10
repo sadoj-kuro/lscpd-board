@@ -913,7 +913,7 @@ function renderLines() {
             const cx2 = x2 - dx * 0.3;
             const cy2 = y2 - dy * 0.1;
             
-            const d = \`M \${x1} \${y1} C \${cx1} \${cy1}, \${cx2} \${cy2}, \${x2} \${y2}\`;
+            const d = `M ${x1} ${y1} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${x2} ${y2}`;
             
             path.setAttribute('d', d);
             path.setAttribute('fill', 'none');
