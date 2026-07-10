@@ -693,8 +693,9 @@ function renderItem(item) {
         textarea.onfocus = () => activeTextareaId = item.id;
         textarea.onblur = () => {
             activeTextareaId = null;
-            if (textarea.value !== item.content) {
-                item.content = textarea.value;
+            const currentItem = items.find(i => i.id === item.id) || item;
+            if (textarea.value !== currentItem.content) {
+                currentItem.content = textarea.value;
                 saveData();
             }
         };
@@ -704,7 +705,8 @@ function renderItem(item) {
             if (!isEditor) return;
             textarea.style.height = 'auto';
             textarea.style.height = textarea.scrollHeight + 'px';
-            item.content = e.target.value;
+            const currentItem = items.find(i => i.id === item.id) || item;
+            currentItem.content = e.target.value;
             saveData();
             renderLines();
         };
