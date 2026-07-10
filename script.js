@@ -316,7 +316,7 @@ if (loginBtn) {
         try {
             // On essaie d'abord de se connecter en Détective
             try {
-                await firebase.auth().signInWithEmailAndPassword('detective@lscpd.local', pass);
+                await firebase.auth().signInWithEmailAndPassword('detective@lscpd.local', pass).catch(() => firebase.auth().signInWithEmailAndPassword('detective@lscpd.com', pass));
                 isEditor = true;
                 isAdmin = false;
                 localStorage.setItem('lscpd_role', 'detective');
@@ -325,9 +325,9 @@ if (loginBtn) {
                 alert("Connexion réussie. Mode Détective (Édition) activé !");
                 return;
             } catch (errDetective) {
-                // Si ça rate (mot de passe incorrect pour le détective), on essaie en Super Admin
+                // Si ça rate, on essaie en Super Admin
                 try {
-                    await firebase.auth().signInWithEmailAndPassword('admin@lscpd.local', pass);
+                    await firebase.auth().signInWithEmailAndPassword('admin@lscpd.local', pass).catch(() => firebase.auth().signInWithEmailAndPassword('admin@lscpd.com', pass));
                     isEditor = true;
                     isAdmin = true;
                     localStorage.setItem('lscpd_role', 'admin');
@@ -336,8 +336,14 @@ if (loginBtn) {
                     alert("Connexion réussie. Mode Super Admin activé !");
                     return;
                 } catch (errAdmin) {
-                    // Si les deux échouent, le mot de passe est vraiment incorrect
-                    alert("Mot de passe incorrect.");
+                    // Si les deux échouent, on affiche la vraie erreur Firebase
+                    if (errAdmin.code === 'auth/user-not-found' || errAdmin.code === 'auth/wrong-password') {
+                        alert("Mot de passe incorrect.");
+                    } else if (errAdmin.code === 'auth/unauthorized-domain') {
+                        alert("Erreur de sécurité : Tu dois autoriser le domaine 'sadoj-kuro.github.io' dans ton panel Firebase (Authentication > Paramètres > Domaines autorisés).");
+                    } else {
+                        alert(`Erreur Firebase détaillée :\n\n${errDetective.message}\n\n${errAdmin.message}`);
+                    }
                 }
             }
         } catch (e) {
