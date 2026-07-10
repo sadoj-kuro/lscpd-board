@@ -690,25 +690,29 @@ function renderItem(item) {
         
         if (!isEditor) textarea.readOnly = true;
 
+        let saveTimeout;
         textarea.onfocus = () => activeTextareaId = item.id;
         textarea.onblur = () => {
             activeTextareaId = null;
             const currentItem = items.find(i => i.id === item.id) || item;
-            if (textarea.value !== currentItem.content) {
-                currentItem.content = textarea.value;
-                saveData();
-            }
+            currentItem.content = textarea.value;
+            clearTimeout(saveTimeout);
+            saveData();
         };
 
-        // Auto-resize et sauvegarde temps réel
+        // Auto-resize et sauvegarde debounce (anti-spam Firebase)
         textarea.oninput = (e) => {
             if (!isEditor) return;
             textarea.style.height = 'auto';
             textarea.style.height = textarea.scrollHeight + 'px';
             const currentItem = items.find(i => i.id === item.id) || item;
             currentItem.content = e.target.value;
-            saveData();
             renderLines();
+            
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
+                saveData();
+            }, 1000);
         };
 
         textarea.addEventListener('mousedown', (e) => {
