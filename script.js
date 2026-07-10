@@ -881,7 +881,7 @@ function renderLines() {
     linesContainer.innerHTML = `
         <defs>
             <marker id="arrowhead" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
-                <polygon points="0 0, 6 3, 0 6" fill="var(--string-color)" />
+                <polygon points="0 0, 6 3, 0 6" fill="context-stroke" />
             </marker>
         </defs>
     `;
@@ -902,19 +902,27 @@ function renderLines() {
 
             const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
             
-            // Courbe de Bézier pour un effet plus naturel (Miro-like)
+            // Courbe de Bézier avec un effet d'affaissement (sagging)
             const dx = x2 - x1;
             const dy = y2 - y1;
-            const cx1 = x1 + dx * 0.3;
-            const cy1 = y1 + dy * 0.1;
-            const cx2 = x2 - dx * 0.3;
-            const cy2 = y2 - dy * 0.1;
+            // On ajoute un poids vers le bas pour faire l'effet d'une vraie ficelle
+            const sag = Math.min(Math.abs(dx) * 0.2, 50); 
+            const cx1 = x1 + dx * 0.33;
+            const cy1 = y1 + dy * 0.33 + sag;
+            const cx2 = x1 + dx * 0.66;
+            const cy2 = y1 + dy * 0.66 + sag;
             
             const d = `M ${x1} ${y1} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${x2} ${y2}`;
             
+            // Couleur de la ficelle basée sur la couleur de la punaise de départ, sinon rouge
+            let strokeColor = 'var(--string-color)';
+            if (itemFrom.pinColor && itemFrom.pinColor[0]) {
+                strokeColor = itemFrom.pinColor[0];
+            }
+            
             path.setAttribute('d', d);
             path.setAttribute('fill', 'none');
-            path.setAttribute('stroke', 'var(--string-color)');
+            path.setAttribute('stroke', strokeColor);
             path.setAttribute('stroke-width', '4');
             path.setAttribute('marker-end', 'url(#arrowhead)');
             
