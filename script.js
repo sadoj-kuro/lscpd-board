@@ -897,10 +897,19 @@ function renderLines() {
         const itemTo = items.find(i => i.id === link.to);
 
         if (elFrom && elTo && itemFrom && itemTo) {
-            const x1 = itemFrom.x + elFrom.offsetWidth / 2;
-            const y1 = itemFrom.y + 15; // Point d'attache au niveau de la punaise
-            const x2 = itemTo.x + elTo.offsetWidth / 2;
-            const y2 = itemTo.y + 15; // Point d'attache au niveau de la punaise
+            const rot1 = (itemFrom.rotation || 0) * Math.PI / 180;
+            const cx1_item = itemFrom.x + elFrom.offsetWidth / 2;
+            const cy1_item = itemFrom.y + elFrom.offsetHeight / 2;
+            const dist1 = elFrom.offsetHeight / 2 - 15;
+            const x1 = cx1_item + dist1 * Math.sin(rot1);
+            const y1 = cy1_item - dist1 * Math.cos(rot1);
+
+            const rot2 = (itemTo.rotation || 0) * Math.PI / 180;
+            const cx2_item = itemTo.x + elTo.offsetWidth / 2;
+            const cy2_item = itemTo.y + elTo.offsetHeight / 2;
+            const dist2 = elTo.offsetHeight / 2 - 15;
+            const x2 = cx2_item + dist2 * Math.sin(rot2);
+            const y2 = cy2_item - dist2 * Math.cos(rot2);
 
             const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
             
