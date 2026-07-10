@@ -896,9 +896,9 @@ function renderLines() {
 
         if (elFrom && elTo && itemFrom && itemTo) {
             const x1 = itemFrom.x + elFrom.offsetWidth / 2;
-            const y1 = itemFrom.y + elFrom.offsetHeight / 2;
+            const y1 = itemFrom.y + 15; // Point d'attache au niveau de la punaise
             const x2 = itemTo.x + elTo.offsetWidth / 2;
-            const y2 = itemTo.y + elTo.offsetHeight / 2;
+            const y2 = itemTo.y + 15; // Point d'attache au niveau de la punaise
 
             const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
             
