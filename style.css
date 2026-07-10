@@ -207,7 +207,7 @@ body {
 
 /* Note style */
 .note {
-    background-color: #fef08a;
+    background-color: #fef08a; /* Default */
     color: #1f2937;
     padding: 25px 20px 20px 20px;
     min-width: 220px;
@@ -216,8 +216,37 @@ body {
     font-family: 'Permanent Marker', cursive;
     font-size: 1.2rem;
     border-radius: 2px;
-    border: 1px solid #fde047;
+    border: 1px solid #fde047; /* Default */
     transform: rotate(calc(var(--rot) * 1deg));
+}
+
+/* Floating Text */
+.floating-text {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    color: #fff; /* Default */
+    padding: 10px;
+    min-width: 150px;
+    min-height: 50px;
+    font-family: 'Permanent Marker', cursive;
+    font-size: 1.5rem;
+    transform: rotate(calc(var(--rot) * 1deg));
+}
+.floating-text textarea {
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    resize: none;
+    font-family: inherit;
+    font-size: inherit;
+    color: inherit;
+    overflow: hidden;
+    line-height: 1.4;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+    text-align: center;
 }
 .note::before {
     content: '';

@@ -23,6 +23,7 @@ const board = document.getElementById('board');
 const linesContainer = document.getElementById('lines-container');
 const toolbar = document.getElementById('toolbar');
 
+const addTextBtn = document.getElementById('add-text-btn');
 const addNoteBtn = document.getElementById('add-note-btn');
 const addPhotoBtn = document.getElementById('add-photo-btn');
 const linkBtn = document.getElementById('link-btn');
@@ -448,6 +449,28 @@ const getCenterPos = (offset) => ({
     y: (board.scrollTop + window.innerHeight / 2) / currentZoom - offset + (Math.random() * 50 - 25)
 });
 
+if (addTextBtn) {
+    addTextBtn.addEventListener('click', () => {
+        if (!isEditor) return;
+        if (!currentCaseId) return alert("Veuillez d'abord entrer un nom de dossier et cliquer sur Charger !");
+        
+        const id = generateId();
+        const pos = getCenterPos(100);
+        const item = {
+            id,
+            type: 'floating-text',
+            x: pos.x,
+            y: pos.y,
+            content: 'Nouveau Texte',
+            rotation: Math.random() * 4 - 2,
+            textColor: ['#ffffff', '#fca5a5', '#86efac', '#93c5fd', '#fde047'][Math.floor(Math.random() * 5)]
+        };
+        items.push(item);
+        renderItem(item);
+        saveData();
+    });
+}
+
 if (addNoteBtn) {
     addNoteBtn.addEventListener('click', () => {
         if (!isEditor) return;
@@ -455,6 +478,16 @@ if (addNoteBtn) {
             alert("Veuillez d'abord entrer un nom de dossier et cliquer sur Charger !");
             return;
         }
+        
+        const colors = [
+            { bg: '#fef08a', border: '#fde047' }, // Jaune
+            { bg: '#bfdbfe', border: '#93c5fd' }, // Bleu
+            { bg: '#bbf7d0', border: '#86efac' }, // Vert
+            { bg: '#fecdd3', border: '#fda4af' }, // Rose
+            { bg: '#fed7aa', border: '#fdba74' }  // Orange
+        ];
+        const color = colors[Math.floor(Math.random() * colors.length)];
+
         const id = generateId();
         const pos = getCenterPos(100);
         const item = {
@@ -464,7 +497,9 @@ if (addNoteBtn) {
             y: pos.y,
             content: '',
             rotation: Math.random() * 6 - 3,
-            pinColor: getRandomPin()
+            pinColor: getRandomPin(),
+            bgColor: color.bg,
+            borderColor: color.border
         };
         items.push(item);
         renderItem(item);
@@ -578,11 +613,14 @@ function renderItem(item) {
     el.className = `board-item ${item.type}`;
     el.style.left = item.x + 'px';
     el.style.top = item.y + 'px';
-    el.style.setProperty('--rot', item.rotation);
+    el.style.setProperty('--rot', item.rotation || 0);
     if (item.pinColor) {
         el.style.setProperty('--pin-c1', item.pinColor[0]);
         el.style.setProperty('--pin-c2', item.pinColor[1]);
     }
+    if (item.bgColor) el.style.backgroundColor = item.bgColor;
+    if (item.borderColor) el.style.borderColor = item.borderColor;
+    if (item.textColor) el.style.color = item.textColor;
 
     if (isEditor) {
         const delBtn = document.createElement('button');
@@ -653,18 +691,37 @@ function renderItem(item) {
             ta.style.height = (ta.scrollHeight) + 'px';
             saveData(); // Sauvegarde temps réel quand on tape !
         });
-
-        ta.addEventListener('focus', () => { activeTextareaId = item.id; });
-        ta.addEventListener('blur', () => { activeTextareaId = null; });
-
-        ta.addEventListener('mousedown', (e) => {
-            if (!isLinkingMode && isEditor) e.stopPropagation();
-        });
-        el.appendChild(ta);
-
+    if (item.type === 'note' || item.type === 'floating-text') {
+        const textarea = document.createElement('textarea');
+        textarea.value = item.content;
+        textarea.spellcheck = false;
+        if (item.type === 'floating-text') {
+            textarea.placeholder = "Tapez un titre...";
+        }
+        
+        textarea.onfocus = () => activeTextareaId = item.id;
+        textarea.onblur = () => {
+            activeTextareaId = null;
+            if (textarea.value !== item.content) {
+                item.content = textarea.value;
+                saveData();
+            }
+        };
+        // Auto-resize
+        textarea.oninput = () => {
+            textarea.style.height = 'auto';
+            textarea.style.height = textarea.scrollHeight + 'px';
+            item.content = textarea.value;
+            // On sauvegarde en temps réel (attention si bcp de requetes)
+            saveData();
+            renderLines(); // update lines if size changed
+        };
+        el.appendChild(textarea);
+        
+        // Initial resize
         setTimeout(() => {
-            ta.style.height = 'auto';
-            ta.style.height = (ta.scrollHeight) + 'px';
+            textarea.style.height = 'auto';
+            textarea.style.height = textarea.scrollHeight + 'px';
         }, 0);
     } else if (item.type === 'photo') {
         const img = document.createElement('img');
@@ -824,7 +881,13 @@ window.addEventListener('mouseup', () => {
 });
 
 function renderLines() {
-    linesContainer.innerHTML = '';
+    linesContainer.innerHTML = `
+        <defs>
+            <marker id="arrowhead" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+                <polygon points="0 0, 6 3, 0 6" fill="var(--string-color)" />
+            </marker>
+        </defs>
+    `;
     linesContainer.setAttribute('width', '4000');
     linesContainer.setAttribute('height', '4000');
 
@@ -840,29 +903,37 @@ function renderLines() {
             const x2 = itemTo.x + elTo.offsetWidth / 2;
             const y2 = itemTo.y + elTo.offsetHeight / 2;
 
-            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            line.setAttribute('x1', x1);
-            line.setAttribute('y1', y1);
-            line.setAttribute('x2', x2);
-            line.setAttribute('y2', y2);
-
-            // LA FICELLE EST MAINTENANT SOLIDE ET PLUS ÉPAISSE !
-            line.setAttribute('stroke', 'var(--string-color)');
-            line.setAttribute('stroke-width', '4');
-
-            line.style.filter = 'drop-shadow(2px 4px 6px black)';
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            
+            // Courbe de Bézier pour un effet plus naturel (Miro-like)
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const cx1 = x1 + dx * 0.3;
+            const cy1 = y1 + dy * 0.1;
+            const cx2 = x2 - dx * 0.3;
+            const cy2 = y2 - dy * 0.1;
+            
+            const d = \`M \${x1} \${y1} C \${cx1} \${cy1}, \${cx2} \${cy2}, \${x2} \${y2}\`;
+            
+            path.setAttribute('d', d);
+            path.setAttribute('fill', 'none');
+            path.setAttribute('stroke', 'var(--string-color)');
+            path.setAttribute('stroke-width', '4');
+            path.setAttribute('marker-end', 'url(#arrowhead)');
+            
+            path.style.filter = 'drop-shadow(2px 4px 6px black)';
 
             if (isEditor) {
-                line.style.pointerEvents = 'stroke';
-                line.style.cursor = 'pointer';
-                line.onclick = () => {
+                path.style.pointerEvents = 'stroke';
+                path.style.cursor = 'pointer';
+                path.onclick = () => {
                     links = links.filter(l => l !== link);
                     renderLines();
                     saveData();
                 };
             }
 
-            linesContainer.appendChild(line);
+            linesContainer.appendChild(path);
         }
     });
 }
